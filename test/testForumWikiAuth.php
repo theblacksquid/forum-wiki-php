@@ -14,7 +14,11 @@ class tests extends fwTestingFramework
         try
         {
             $user1 = $this->testForumWikiRegister('testerTesterson', 'aSecurePassword');
-            array_push($this->userIdArray, $user1['fwUserId']);
+            $user2 = $this->testForumWikiRegister('testerino_testmore', 'secureEnough');
+            array_push($this->userIdArray, $user1['result']['fwUserId']);
+            array_push($this->userIdArray, $user2['result']['fwUserId']);
+
+            $this->testCleanup($this->userIdArray);
         }
 
         catch (Exception $error)
@@ -27,6 +31,8 @@ class tests extends fwTestingFramework
 
     public function testForumWikiRegister($username, $password)
     {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
         $params =
         [
             'requestedUsername' => $username,

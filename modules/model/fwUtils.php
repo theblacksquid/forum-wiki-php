@@ -29,6 +29,15 @@ class fwUtils
             isset($_REQUEST[$param]) || die('Missing required parameter ' . $param);
         }
     }
+
+    public static function outputJsonResponse(array $response)
+    {
+        $currentTime = new DateTime('now', new DateTimeZone('UTC'));
+
+        return json_encode(['status' => 'ok',
+                            'result' => $response,
+                            'timestamp' => $currentTime->getTimestamp()]);
+    }
 }
 
 ?>

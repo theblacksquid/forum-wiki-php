@@ -25,7 +25,7 @@ try
         [$_REQUEST['requestedUsername']]
     );
 
-    if ( count($isUsernameTaken) !== 0 )
+    if ( count($isUsernameTaken) > 0 )
     {
         // username already taken
         throw new fwServerException('000100000000');
@@ -38,8 +38,7 @@ try
     $newUser = $dbConnection->query("SELECT * FROM fwUsers WHERE username = ?",
                                     [$_REQUEST['requestedUsername']]);
 
-    echo json_encode($dbConnection->query("SELECT UNIX_TIMESTAMP(NOW())"));
-    echo json_encode(['fwUserId' => '1234']);
+    echo fwUtils::outputJsonResponse(['fwUserId' => $newUser[0]['fwUserId']]);
 }
 
 catch (fwServerException $error)
