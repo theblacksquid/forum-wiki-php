@@ -10,6 +10,9 @@ final class fwServerException extends Exception
         // fwAuthorization
         '000100000000' => 'Username is already taken',
         '000100000001' => 'Username is too long',
+        '000100000002' => 'Password incorrect',
+        '000100000003' => 'Too many failed login attempts.',
+        '000100000004' => 'User is suspended',
     ];
 
     protected $code;
@@ -26,13 +29,6 @@ final class fwServerException extends Exception
         return $this->code;
     }
 
-    public static function getServerUTCTimestamp()
-    {
-        $date = new DateTime('now', new DateTimeZone('UTC'));
-
-        return $date->getTimestamp();
-    }
-
     public static function handleUnknownErrors(Exception $error)
     {
         print($error->getMessage() . "\r\n" . $error->getTraceAsString());
@@ -45,6 +41,7 @@ final class fwServerException extends Exception
     {
         $errorMessage = '';
         $code = $errorCode;
+        $timestamp = (new DateTime('now', new DateTimeZone('UTC')))->getTimestamp();
         
         if ( isset(self::$Exceptions[$errorCode]) == FALSE )
         {
@@ -61,7 +58,7 @@ final class fwServerException extends Exception
         [
             'errorCode' => $code,
             'errorMessage' => $errorMessage,
-            'timestamp' => self::getServerUTCTimestamp()
+            'timestamp' => $timestamp
         ];
 
         if ( $errorDetail !== NULL )

@@ -37,17 +37,33 @@ class fwPDO
 
     public function execute($query, $params = [])
     {
-        $dbConnection = $this->_getDbConnection();
-        $statement = $dbConnection->prepare($query);
-        return $statement->execute($params);
+        try
+        {
+            $dbConnection = $this->_getDbConnection();
+            $statement = $dbConnection->prepare($query);
+            return $statement->execute($params);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
     }
 
     public function query($query, $params = [])
     {
-        $dbConnection = $this->_getDbConnection();
-        $statement = $dbConnection->prepare($query);
-        $statement->execute($params);
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+        try
+        {
+            $dbConnection = $this->_getDbConnection();
+            $statement = $dbConnection->prepare($query);
+            $statement->execute($params);
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
     }
 
     public function beginTransaction()

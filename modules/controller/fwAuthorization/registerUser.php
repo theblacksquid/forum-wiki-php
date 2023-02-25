@@ -31,12 +31,20 @@ try
         throw new fwServerException('000100000000');
     }
 
-    $insertNewUserQuery = "INSERT INTO fwUsers (username, passwordHash, dateRegistered) VALUES (?, ?, UNIX_TIMESTAMP(NOW()))";
+    $metadata = json_encode(['isSuspended' => 0]);
+    $insertNewUserQuery = "INSERT INTO fwUsers (username, passwordHash, dateRegistered, metadata) 
+                           VALUES (?, ?, UNIX_TIMESTAMP(NOW()), ?)";
 
-    $dbConnection->execute($insertNewUserQuery, [$_REQUEST['requestedUsername'], $_REQUEST['password']]);
+    $dbConnection->execute($insertNewUserQuery,
+                           [$_REQUEST['requestedUsername'],
+                            $_REQUEST['password'],
+                            $metadata]);
 
     $newUser = $dbConnection->query("SELECT * FROM fwUsers WHERE username = ?",
                                     [$_REQUEST['requestedUsername']]);
+
+    $insertSecurityRow = "INSERT INTO fwSecurity VALUES (?, '', 0, UNIX_TIMESTAMP(NOW()))";
+    $dbConnection->execute($insertSecurityRow, [$newUser[0]['fwUserId']]);
 
     echo fwUtils::outputJsonResponse(['fwUserId' => $newUser[0]['fwUserId']]);
 }
