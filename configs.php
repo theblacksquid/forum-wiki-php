@@ -2,6 +2,7 @@
 
 $configs =
 [
+    'ForumName' => 'REPLACEME',
     'DBType' => 'mysql',
     'DBHost' => 'localhost',
     'DBUser' => 'root',
