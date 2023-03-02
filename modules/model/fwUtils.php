@@ -36,11 +36,11 @@ class fwUtils
         }
     }
 
-    public static function verifyRequiredParameters(array $paramNames)
+    public static function verifyRequiredParameters(array $paramNames, $request)
     {
         foreach ($paramNames as $param)
         {
-            isset($_REQUEST[$param]) || die('Missing required parameter ' . $param);
+            isset($request[$param]) || die('Missing required parameter ' . $param);
         }
     }
 
