@@ -40,8 +40,10 @@ VALUES
 ('rdfClass', 'postAuthor', ''),
 ('rdfClass', 'postDate', ''),
 ('rdfClass', 'postText', ''),
+('rdfClass', 'postInternalLink', ''),
 ('rdfClass', 'threadTitle', ''),
 ('rdfClass', 'threadAuthor', ''),
+('rdfClass', 'threadVisibility', ''),
 ('rdfClass', 'boardName', ''),
 ('rdfClass', 'boardModerator', ''),
 ('rdfClass', 'definitionList', ''),
@@ -59,7 +61,8 @@ WHERE fwGraphNodes.nodeKey IN
 (
 	'postAuthor',
 	'postDate',
-	'postText'
+	'postText',
+	'postInternalLink'
 );
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)
@@ -72,7 +75,8 @@ FROM node, fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
 	'threadTitle',
-	'threadAuthor'
+	'threadAuthor',
+	'threadVisibility'
 );
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)

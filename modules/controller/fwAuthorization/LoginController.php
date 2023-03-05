@@ -28,7 +28,7 @@ class LoginController
         $lastFailedAttempt = fwUtils::getServerSideTimestamp() -
                            ((int) $loginAttempts[0]['lastUpdated']);
     
-        fwUtils::debugLog($loginAttempts);
+        // fwUtils::debugLog($loginAttempts);
         $accountMetadata = json_decode($loginAttempts[0]['metadata'], TRUE);
 
         if ( $accountMetadata['isSuspended'] == 1 )
@@ -98,7 +98,7 @@ class LoginController
     {
         try
         {
-            fwUtils::debugLog($request);
+            // fwUtils::debugLog($request);
             fwUtils::verifyRequiredParameters(self::$requiredParameters, $request);
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
             self::checkSuspendAndLoginAttempts($request);
