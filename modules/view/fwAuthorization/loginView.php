@@ -70,7 +70,11 @@ function loginPOST()
     if ( isset($response['errorCode']) )
         return loginGET(['error' => 1]);
 
-    else return '<h1>SUCCESS</h1>';
+    else
+    {
+        $_SESSION['authToken'] = $response['result']['authToken'];
+        header('Location: /');
+    };
 }
     
 function loginView($data)
