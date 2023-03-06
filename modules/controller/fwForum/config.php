@@ -3,6 +3,6 @@
 require_once(__DIR__ . '/../../model/fwPDO.php');
 require_once(__DIR__ . '/../../model/fwServerException.php');
 require_once(__DIR__ . '/../../model/fwUtils.php');
-require_once(__DIR__ . '/../../../configs.php');
+require_once(__DIR__ . '/../../model/Collection.php');
 
 ?>

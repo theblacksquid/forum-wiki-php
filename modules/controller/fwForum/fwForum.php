@@ -20,6 +20,37 @@ class fwForum
 
         $dbController->execute($edgeInsert, [$hash, $hash]);
     }
+
+    private static function groupNodesByPost($postKeys, $postDataArray)
+    {
+        $dataProcessPipe = new Collection($postDataArray);
+        $postKeysMap = new Collection($postKeys);
+
+        return $postKeysMap->map(
+            fn ($key) => $dataProcessPipe->filter(
+                fn ($data) => $data['nodeKey'] == $key
+            )->get()
+        )->get();
+    }
+
+    private static function getPostDetails($postData)
+    {
+        $data = new Collection($postData);
+        
+        $filter = fn ($node) => in_array(
+                    $node['nodeType'],
+                    ["postAuthor", "postDate", "postText"],
+                    TRUE);
+
+        $map = fn ($node) => [$node['nodeType'], $node['nodeMeta']];
+        
+        $reduce = function ($prev, $next) { $prev[$next[0]] = $next[1]; return $prev; };
+        
+        return $data->filter($filter)
+                    ->map($map)
+                    ->reduce($reduce, array())
+                    ->get();
+    }
     
     public static function newThread(fwPDO $dbController, array $request)
     {
@@ -93,7 +124,38 @@ class fwForum
     }
 
     public static function getThread(fwPDO $dbController, array $request)
-    {}
+    {
+        fwUtils::verifyRequiredParameters(['threadId', 'hash'], $request);
+        fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+        $threadNodeIdQuery = "SELECT nodeId FROM fwGraphNodes " .
+                             "WHERE nodeType = 'post' AND nodeKey = ? ";
+
+        $threadNodeId = $dbController->query($threadNodeIdQuery, [$request['threadId']]);
+        $threadNodeId = $threadNodeId[0]['nodeId'];
+
+        $postKeyQuery = "WITH posts (nodeId) AS " .
+                       "( " .
+                       "    SELECT edgeTo FROM fwGraphEdges " .
+                       "    WHERE edgeType = 'post' AND edgeFrom = ? " .
+                       ") " .
+                       "SELECT fwGraphNodes.nodeKey FROM fwGraphNodes, posts " .
+                       "WHERE fwGraphNodes.nodeId = posts.nodeId";
+
+        $postKeys = $dbController->query($postKeyQuery, [$threadNodeId]);
+        $postKeys = array_column($postKeys, "nodeKey");
+
+        $listParamString = implode(",", array_fill(0, count($postKeys), "?"));
+        $postDataQuery = "SELECT * from fwGraphNodes WHERE nodeKey IN ($listParamString)";
+        $postData = $dbController->query($postDataQuery, $postKeys);
+
+        $groupedByPost = self::groupNodesByPost($postKeys, $postData);
+        $groupedByPost = array_map(
+            fn ($post) => self::getPostDetails($post),
+            $groupedByPost);
+
+        return fwUtils::outputJsonResponse($groupedByPost);
+    }
     
     public static function deleteThread(fwPDO $dbController, array $request)
     {}
@@ -159,7 +221,7 @@ class fwForum
             
             $dbController->execute(
                 $insertNextPostEdge,
-                [$threadNodeId, $newPostId, ($countPosts + 1)]
+                [$threadNodeId, $newPostId, $countPosts]
             );
 
             self::insertPostEdges($dbController, $request['hash']);

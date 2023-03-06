@@ -70,6 +70,9 @@ class tests extends fwTestingFramework
 
             array_push(self::$postHashes, $newPost1['result']['newPost']);
 
+            $threadData = $this->testGetThread($thread1['result']['threadId']);
+            $this->assertEquals(count($threadData['result']), 2);
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
@@ -162,6 +165,20 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'newPost.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testGetThread($threadId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params['threadId'] = $threadId;
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'getThread.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);
