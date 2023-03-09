@@ -4,6 +4,16 @@ require_once(__DIR__ . '/config.php');
 
 class fwForum
 {
+    private static function doesPostIdExist(fwPDO $dbController, $hash)
+    {
+        $query = "SELECT COUNT(*) FROM fwGraphNodes " .
+                 "WHERE nodeType = 'post' AND nodeKey = ?";
+
+        $response = $dbController->query($query, [$hash]);
+
+        return ( count($response) > 0 );
+    }
+    
     private static function insertPostEdges(fwPDO $dbController, $hash)
     {
         $edgeInsert =
@@ -145,7 +155,22 @@ class fwForum
     }
     
     public static function deleteThread(fwPDO $dbController, array $request)
-    {}
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(
+                ['fwUserId', 'authToken', 'threadId', 'hash'],
+                $request
+            );
+
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            fwUtils::verifyAuthToken($request['authToken']);            
+        }
+
+        catch (Exception $error)
+        {}
+    }
 
     public static function newPost(fwPDO $dbController, array $request)
     {
@@ -164,6 +189,12 @@ class fwForum
             {
                 // post content too long
                 throw new fwServerException('000200000000');
+            }
+
+            if ( self::doesPostIdExist($dbController, $request['threadId']) == FALSE )
+            {
+                // threadId not found
+                throw new fwServerException('000200000002');
             }
 
             $nodeInsert = "INSERT INTO fwGraphNodes (nodeType, nodeKey, nodeMeta) ".
@@ -226,15 +257,32 @@ class fwForum
         try
         {
             fwUtils::verifyRequiredParameters(
-                ['fwUserId', 'authToken', 'threadId', 'postText', 'hash'],
+                ['fwUserId', 'authToken', 'postId', 'postText', 'hash'],
                 $request
             );
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
             fwUtils::verifyAuthToken($request['authToken']);
-
             
+            if ( strlen($request['postText']) > fwConfigs::get('MaxPostLength') )
+            {
+                // post text too long
+                throw new fwServerException('000200000000');
+            }
+
+            if ( self::doesPostIdExist($dbController, $request['postId']) == FALSE )
+            {
+                // postId not found
+                throw new fwServerException('000200000003');
+            }
+
+            $query = "UPDATE fwGraphNodes SET nodeMeta = ? " .
+                     "WHERE nodeType = 'postText' AND nodeKey = ? ";
+
+            $dbController->execute($query, [$request['postText'], $request['postId']]);
+
+            return fwUtils::outputJsonResponse([]);
         }
 
         catch (Exception $error)

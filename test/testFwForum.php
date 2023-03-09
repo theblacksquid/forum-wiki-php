@@ -75,9 +75,30 @@ class tests extends fwTestingFramework
             $threadFail = $this->testGetThread('IDoNotExist');
             $this->assertEquals($threadFail['errorCode'], '000200000002');
 
+            $this->testEditPost(
+                $user1['result']['fwUserId'],
+                $authToken1['result']['authToken'],
+                "This is me replacing the contents of my previous post which used to have just some plain-ass lorem-ipsum placeholder stuff",
+                $newPost1['result']['postId']
+            );
+
+            $afterEdit = $this->testGetThread($thread1['result']['threadId']);
+            $this->assertEquals(
+                ($threadData['result'][1]['postText'] !=
+                 $afterEdit['result'][1]['postText']),
+                TRUE
+            );
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
+        catch (fwServerException $error)
+        {
+            echo "\n";
+            echo fwServerException::outputJsonError($error->getCode());
+            $this->testCleanup(self::$userId, self::$postHashes);
+        }
+        
         catch (Exception $error)
         {
             $this->testCleanup(self::$userId, self::$postHashes);
@@ -186,6 +207,27 @@ class tests extends fwTestingFramework
         return json_decode($response, TRUE);
     }
 
+    public function testEditPost($fwUserId, $authToken, $postText, $postId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params =
+        [
+            'fwUserId' => $fwUserId,
+            'authToken' => $authToken,
+            'postText' => $postText,
+            'postId' => $postId
+        ];
+
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'editPost.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
     public function testCleanup(array $userIds, array $threadId)
     {
         $dbConnection = new fwPDO(
@@ -207,7 +249,7 @@ class tests extends fwTestingFramework
 
         foreach ($threadId as $thread)
         {
-            $dbConnection->execute($deleteEdge, [$thread]);            
+            $dbConnection->execute($deleteEdge, [$thread]);
             $dbConnection->execute($deleteNode, [$thread]);
         }
     }
