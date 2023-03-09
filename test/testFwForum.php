@@ -71,6 +71,9 @@ class tests extends fwTestingFramework
 
             $threadData = $this->testGetThread($thread1['result']['threadId']);
             $this->assertEquals(count($threadData['result']), 2);
+            
+            $threadFail = $this->testGetThread('IDoNotExist');
+            $this->assertEquals($threadFail['errorCode'], '000200000002');
 
             $this->testCleanup(self::$userId, self::$postHashes);
         }

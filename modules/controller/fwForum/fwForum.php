@@ -133,8 +133,13 @@ class fwForum
                         "WHERE edgeType = 'post' AND edgeFrom = ?";
 
         $postKeys = $dbController->query($postKeyQuery, [$request['threadId']]);
-        fwUtils::debugLog($postKeys);
         $postKeys = array_column($postKeys, "edgeTo");
+
+        if ( count($postKeys) == 0 )
+        {
+            // threadId not found
+            throw new fwServerException('000200000002');
+        }
 
         $listParamString = implode(",", array_fill(0, count($postKeys), "?"));
         $postDataQuery = "SELECT * from fwGraphNodes WHERE nodeKey IN ( $listParamString )";

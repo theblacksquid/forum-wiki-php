@@ -17,6 +17,7 @@ final class fwServerException extends Exception
         // fwForum
         '000200000000' => 'Post text is too long',
         '000200000001' => 'Post title is too long',
+        '000200000002' => 'threadId not found',
     ];
 
     protected $code;
