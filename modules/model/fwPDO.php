@@ -22,6 +22,7 @@ class fwPDO
                  ';host=' . fwConfigs::get('DBHost');
 
             $this->connection = new PDO($dsn, $this->user, $this->password);
+            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
 
         catch (Exception $error)

@@ -8,13 +8,8 @@ class fwForum
     {
         $edgeInsert =
                     "INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData) " .
-                    "WITH post(postId) as " .
-                    "( " .
-                    "    SELECT nodeId FROM fwGraphNodes " .
-                    "    WHERE nodeType = 'post' AND nodeKey = ? " .
-                    ") " .
-                    "SELECT fwGraphNodes.nodeType, post.postId, fwGraphNodes.nodeId, '' " .
-                    "FROM fwGraphNodes, post " .
+                    "SELECT fwGraphNodes.nodeType, ?, fwGraphNodes.nodeKey, '' " .
+                    "FROM fwGraphNodes " .
                     "WHERE fwGraphNodes.nodeKey = ? " .
                     "AND NOT fwGraphNodes.nodeType = 'post';";
 
@@ -102,17 +97,17 @@ class fwForum
 
             self::insertPostEdges($dbController, $request['hash']);
 
-            $postId = $dbController->query(
-                "SELECT nodeId FROM fwGraphNodes WHERE nodeKey = ?",
-                [$request['hash']]
-            );
-            $postId = $postId[0]['nodeId'];
+            // $postId = $dbController->query(
+            //     "SELECT nodeId FROM fwGraphNodes WHERE nodeKey = ?",
+            //     [$request['hash']]
+            // );
+            // $postId = $postId[0]['nodeId'];
 
             $insertInitialPost = "INSERT INTO fwGraphEdges " .
                                  "(edgeType, edgeFrom, edgeTo, edgeData) " .
                                  "VALUES ('post', ?, ?, 0)";
 
-            $dbController->execute($insertInitialPost, [$postId, $postId]);
+            $dbController->execute($insertInitialPost, [$request['hash'], $request['hash']]);
 
             echo fwUtils::outputJsonResponse(['threadId' => $request['hash']]);
         }
@@ -128,25 +123,21 @@ class fwForum
         fwUtils::verifyRequiredParameters(['threadId', 'hash'], $request);
         fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-        $threadNodeIdQuery = "SELECT nodeId FROM fwGraphNodes " .
-                             "WHERE nodeType = 'post' AND nodeKey = ? ";
+        // $threadNodeIdQuery = "SELECT nodeId FROM fwGraphNodes " .
+        //                      "WHERE nodeType = 'post' AND nodeKey = ? ";
 
-        $threadNodeId = $dbController->query($threadNodeIdQuery, [$request['threadId']]);
-        $threadNodeId = $threadNodeId[0]['nodeId'];
+        // $threadNodeId = $dbController->query($threadNodeIdQuery, [$request['threadId']]);
+        // $threadNodeId = $threadNodeId[0]['nodeId'];
 
-        $postKeyQuery = "WITH posts (nodeId) AS " .
-                       "( " .
-                       "    SELECT edgeTo FROM fwGraphEdges " .
-                       "    WHERE edgeType = 'post' AND edgeFrom = ? " .
-                       ") " .
-                       "SELECT fwGraphNodes.nodeKey FROM fwGraphNodes, posts " .
-                       "WHERE fwGraphNodes.nodeId = posts.nodeId";
+        $postKeyQuery = "SELECT edgeTo FROM fwGraphEdges " .
+                        "WHERE edgeType = 'post' AND edgeFrom = ?";
 
-        $postKeys = $dbController->query($postKeyQuery, [$threadNodeId]);
-        $postKeys = array_column($postKeys, "nodeKey");
+        $postKeys = $dbController->query($postKeyQuery, [$request['threadId']]);
+        fwUtils::debugLog($postKeys);
+        $postKeys = array_column($postKeys, "edgeTo");
 
         $listParamString = implode(",", array_fill(0, count($postKeys), "?"));
-        $postDataQuery = "SELECT * from fwGraphNodes WHERE nodeKey IN ($listParamString)";
+        $postDataQuery = "SELECT * from fwGraphNodes WHERE nodeKey IN ( $listParamString )";
         $postData = $dbController->query($postDataQuery, $postKeys);
 
         $groupedByPost = self::groupNodesByPost($postKeys, $postData);
@@ -196,22 +187,22 @@ class fwForum
 
             $dbController->execute($nodeInsert, $nodeInsertParams);
 
-            $newPostIdQuery = "SELECT nodeId FROM fwGraphNodes " .
-                              "WHERE nodeType = 'post' AND nodeKey = ?";
+            // $newPostIdQuery = "SELECT nodeId FROM fwGraphNodes " .
+            //                   "WHERE nodeType = 'post' AND nodeKey = ?";
             
-            $newPostId = $dbController->query($newPostIdQuery, [$request['hash']]);
-            $newPostId = $newPostId[0]['nodeId'];
+            // $newPostId = $dbController->query($newPostIdQuery, [$request['hash']]);
+            // $newPostId = $newPostId[0]['nodeId'];
             
-            $threadNodeIdQuery = "SELECT nodeId FROM fwGraphNodes " .
-                                 "WHERE nodeType = 'post' AND nodeKey = ?";
+            // $threadNodeIdQuery = "SELECT nodeId FROM fwGraphNodes " .
+            //                      "WHERE nodeType = 'post' AND nodeKey = ?";
             
-            $threadNodeId = $dbController->query($threadNodeIdQuery, [$request['threadId']]);
-            $threadNodeId = $threadNodeId[0]['nodeId'];
+            // $threadNodeId = $dbController->query($threadNodeIdQuery, [$request['threadId']]);
+            // $threadNodeId = $threadNodeId[0]['nodeId'];
 
             $countPostsInThread = "SELECT COUNT(*) FROM fwGraphEdges " .
                                   "WHERE edgeType = 'post' AND edgeFrom = ?";
             
-            $countPosts = $dbController->query($countPostsInThread, [$threadNodeId]);
+            $countPosts = $dbController->query($countPostsInThread, [$request['threadId']]);
             $countPosts = $countPosts[0]['COUNT(*)'];
 
             $insertNextPostEdge = "INSERT INTO fwGraphEdges " .
@@ -221,17 +212,17 @@ class fwForum
             
             $dbController->execute(
                 $insertNextPostEdge,
-                [$threadNodeId, $newPostId, $countPosts]
+                [$request['threadId'], $request['hash'], $countPosts]
             );
 
             self::insertPostEdges($dbController, $request['hash']);
 
             $outputQuery = "SELECT nodeKey AS posts FROM fwGraphNodes WHERE nodeId IN " .
                            "(SELECT edgeTo FROM fwGraphEdges WHERE edgeType = 'post' AND edgeFrom = ?) ";
-            $output = $dbController->query($outputQuery, [$threadNodeId]);
+            $output = $dbController->query($outputQuery, [$request['threadId']]);
             $output = array_column($output, "posts");
 
-            return fwUtils::outputJsonResponse(['newPost' => $request['hash'], 'posts' => $output]);
+            return fwUtils::outputJsonResponse(['postId' => $request['hash'], 'posts' => $output]);
         }
 
         catch (Exception $error)
@@ -241,7 +232,9 @@ class fwForum
     }
 
     public static function editPost(fwPDO $dbController, array $request)
-    {}
+    {
+        
+    }
 
     public static function deletePost(fwPDO $dbController, array $request)
     {}

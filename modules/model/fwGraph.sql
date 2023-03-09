@@ -20,8 +20,8 @@ CREATE TABLE fwGraphEdges
 (
 	edgeId		INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
 	edgeType	VARCHAR(64) NOT NULL,
-	edgeFrom	INTEGER NOT NULL,
-	edgeTo		INTEGER NOT NULL,
+	edgeFrom	VARCHAR(64) NOT NULL,
+	edgeTo		VARCHAR(64) NOT NULL,
 	edgeData	VARCHAR(1024) NOT NULL,
 
 	INDEX(edgeType),
@@ -51,12 +51,8 @@ VALUES
 ('rdfClass', 'definitionText', '');
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)
-WITH node(nodeId) AS
-(
-	SELECT nodeId from fwGraphNodes WHERE nodeKey = 'post'
-)
-SELECT 'hasField', node.nodeId, fwGraphNodes.nodeId, ''
-FROM node, fwGraphNodes
+SELECT 'hasField', 'post', fwGraphNodes.nodeKey, ''
+FROM fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
 	'postAuthor',
@@ -66,12 +62,8 @@ WHERE fwGraphNodes.nodeKey IN
 );
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)
-WITH node(nodeId) AS
-(
-	SELECT nodeId from fwGraphNodes WHERE nodeKey = 'thread'
-)
-SELECT 'hasField', node.nodeId, fwGraphNodes.nodeId, ''
-FROM node, fwGraphNodes
+SELECT 'hasField', 'thread', fwGraphNodes.nodeKey, ''
+FROM fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
 	'threadTitle',
@@ -80,12 +72,8 @@ WHERE fwGraphNodes.nodeKey IN
 );
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)
-WITH node(nodeId) AS
-(
-	SELECT nodeId from fwGraphNodes WHERE nodeKey = 'board'
-)
-SELECT 'hasField', node.nodeId, fwGraphNodes.nodeId, ''
-FROM node, fwGraphNodes
+SELECT 'hasField', 'board', fwGraphNodes.nodeKey, ''
+FROM fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
 	'boardName',
@@ -93,13 +81,8 @@ WHERE fwGraphNodes.nodeKey IN
 );
 
 INSERT INTO fwGraphEdges (edgeType, edgeFrom, edgeTo, edgeData)
-WITH node(nodeId) AS
-(
-	SELECT nodeId from fwGraphNodes WHERE nodeKey = 'definitionList'
-)
-
-SELECT 'hasField', node.nodeId, fwGraphNodes.nodeId, ''
-FROM node, fwGraphNodes
+SELECT 'hasField', 'definitionList', fwGraphNodes.nodeKey, ''
+FROM fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
 	'definedTerm',

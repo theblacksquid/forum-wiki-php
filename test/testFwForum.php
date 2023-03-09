@@ -1,7 +1,5 @@
 <?php
 
-use tests as GlobalTests;
-
 require_once(__DIR__ . '/fwTestingFramework.php');
 require_once(__DIR__ . '/../modules/model/fwUtils.php');
 require_once(__DIR__ . '/../modules/model/fwConfigs.php');
@@ -68,7 +66,8 @@ class tests extends fwTestingFramework
                 $thread1['result']['threadId']
             );
 
-            array_push(self::$postHashes, $newPost1['result']['newPost']);
+            $this->assertEquals(isset($newPost1['result']['postId']), TRUE);
+            array_push(self::$postHashes, $newPost1['result']['postId']);
 
             $threadData = $this->testGetThread($thread1['result']['threadId']);
             $this->assertEquals(count($threadData['result']), 2);
