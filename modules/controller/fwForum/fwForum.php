@@ -34,10 +34,12 @@ class fwForum
         
         $filter = fn ($node) => in_array(
                     $node['nodeType'],
-                    ["postAuthor", "postDate", "postText"],
+                    ["postAuthor", "postDate", "postText", "post"],
                     TRUE);
 
-        $map = fn ($node) => [$node['nodeType'], $node['nodeMeta']];
+        $map = fn ($node) => $node['nodeType'] == 'post' ?
+                             ['post', $node['nodeKey']] :
+                             [$node['nodeType'], $node['nodeMeta']];
         
         $reduce = function ($prev, $next) { $prev[$next[0]] = $next[1]; return $prev; };
         
@@ -118,7 +120,8 @@ class fwForum
         fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
         $postKeyQuery = "SELECT edgeTo FROM fwGraphEdges " .
-                        "WHERE edgeType = 'post' AND edgeFrom = ?";
+                        "WHERE edgeType = 'post' AND edgeFrom = ? " .
+                        "ORDER BY edgeData";
 
         $postKeys = $dbController->query($postKeyQuery, [$request['threadId']]);
         $postKeys = array_column($postKeys, "edgeTo");
@@ -220,7 +223,24 @@ class fwForum
 
     public static function editPost(fwPDO $dbController, array $request)
     {
-        
+        try
+        {
+            fwUtils::verifyRequiredParameters(
+                ['fwUserId', 'authToken', 'threadId', 'postText', 'hash'],
+                $request
+            );
+
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            fwUtils::verifyAuthToken($request['authToken']);
+
+            
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
     }
 
     public static function deletePost(fwPDO $dbController, array $request)
