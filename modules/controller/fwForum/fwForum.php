@@ -26,6 +26,22 @@ class fwForum
         $dbController->execute($edgeInsert, [$hash, $hash]);
     }
 
+    private static function deleteEdges(fwPDO $dbController, $postId)
+    {
+        $deleteEdgesQuery = "DELETE FROM fwGraphEdges WHERE edgeType IN" .
+                          "( " .
+                          "    SELECT edgeType FROM fwGraphEdges WHERE edgeFrom = ? " .
+                          ") " .
+                          "AND edgeFrom IN " .
+                          "( " .
+                          "    SELECT edgeTo FROM fwGraphEdges " .
+                          "    WHERE edgeType = 'post' AND edgeFrom = ? " .
+                          ")";
+
+        $dbController->execute($deleteEdgesQuery,
+                               [$postId, $postId]);
+    }
+
     private static function groupNodesByPost($postKeys, $postDataArray)
     {
         $dataProcessPipe = new Collection($postDataArray);
@@ -216,18 +232,7 @@ class fwForum
 
             $dbController->execute($deleteNodesQuery, [$request['threadId']]);
 
-            $deleteEdgesQuery = "DELETE FROM fwGraphEdges WHERE edgeType IN" .
-                                "( " .
-                                "    SELECT edgeType FROM fwGraphEdges WHERE edgeFrom = ? " .
-                                ") " .
-                                "AND edgeFrom IN " .
-                                "( " .
-                                "    SELECT edgeTo FROM fwGraphEdges " .
-                                "    WHERE edgeType = 'post' AND edgeFrom = ? " .
-                                ")";
-
-            $dbController->execute($deleteEdgesQuery,
-                                   [$request['threadId'], $request['threadId']]);
+            self::deleteEdges($dbController, $request['threadId']);
 
             return fwUtils::outputJsonResponse([]);
             
@@ -359,7 +364,50 @@ class fwForum
     }
 
     public static function deletePost(fwPDO $dbController, array $request)
-    {}
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(
+                ['fwUserId', 'authToken', 'postId', 'boardId', 'hash'],
+                $request
+            );
+
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            fwUtils::verifyAuthToken($request['authToken']);
+
+            if ( self::doesPostIdExist($dbController, $request['hash']) == FALSE )
+            {
+                // post not found
+                throw new fwServerException('000200000002');
+            }
+
+            $isUserPostAuthor = self::isUserPostAuthor(
+                $dbController, $request['postId'], $request['fwUserId']);
+
+            $isUserModerator = self::isUserModerator(
+                $dbController, $request['boardId'], $request['fwUserId']);
+
+            if ( ($isUserModerator || $isUserPostAuthor) == FALSE )
+            {
+                // User is not author/moderator
+                throw new fwServerException('000200000004');
+            }
+
+            $deleteNodesQuery = "DELETE FROM fwGraphNodes WHERE nodeKey = ?";
+
+            $dbController->execute($deleteNodesQuery, [$request['postId']]);
+
+            self::deleteEdges($dbController, $request['postId']);
+
+            return fwUtils::outputJsonResponse([]);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
 
     public static function addBoard(fwPDO $dbController, array $request)
     {
@@ -374,7 +422,7 @@ class fwForum
 
             fwUtils::verifyAuthToken($request['authToken']);
 
-            
+
         }
 
         catch (Exception $error)

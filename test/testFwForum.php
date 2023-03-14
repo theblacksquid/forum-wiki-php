@@ -99,6 +99,23 @@ class tests extends fwTestingFramework
             $afterDelete = $this->testGetThread($thread1['result']['threadId']);
             $this->assertEquals($afterDelete['errorCode'], '000200000002');
 
+            $toDelete = $this->testNewThread(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $postText1,
+                'This one is just gonna get deleted'
+            );
+
+            $this->testDeletePost(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $toDelete['result']['threadId'],
+                'thereIsNoBoardCodeYet'
+            );
+
+            $afterDelete = $this->testGetThread($toDelete['result']['threadId']);
+            $this->assertEquals($afterDelete['errorCode'], '000200000002');
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
@@ -258,6 +275,27 @@ class tests extends fwTestingFramework
 
         return json_decode($response, TRUE);
     }
+
+    public function testDeletePost($fwUserId, $authToken, $postId, $boardId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params =
+        [
+            'fwUserId' => $fwUserId,
+            'authToken' => $authToken,
+            'postId' => $postId,
+            'boardId' => $boardId
+        ];
+
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'deletePost.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }    
 
     public function testCleanup(array $userIds, array $threadId)
     {
