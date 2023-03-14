@@ -89,6 +89,16 @@ class tests extends fwTestingFramework
                 TRUE
             );
 
+            $this->testDeleteThread(
+                $user1['result']['fwUserId'],
+                $authToken1['result']['authToken'],
+                $thread1['result']['threadId'],
+                'thereIsNoBoardCodeYet'
+            );
+
+            $afterDelete = $this->testGetThread($thread1['result']['threadId']);
+            $this->assertEquals($afterDelete['errorCode'], '000200000002');
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
@@ -223,6 +233,27 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'editPost.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testDeleteThread($fwUserId, $authToken, $threadId, $boardId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params =
+        [
+            'fwUserId' => $fwUserId,
+            'authToken' => $authToken,
+            'threadId' => $threadId,
+            'boardId' => $boardId
+        ];
+
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'deleteThread.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);

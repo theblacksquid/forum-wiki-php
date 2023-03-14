@@ -4,12 +4,12 @@ require_once(__DIR__ . '/config.php');
 
 class fwForum
 {
-    private static function doesPostIdExist(fwPDO $dbController, $hash)
+    private static function doesPostIdExist(fwPDO $dbController, $postId)
     {
         $query = "SELECT COUNT(*) FROM fwGraphNodes " .
                  "WHERE nodeType = 'post' AND nodeKey = ?";
 
-        $response = $dbController->query($query, [$hash]);
+        $response = $dbController->query($query, [$postId]);
 
         return ( count($response) > 0 );
     }
@@ -57,6 +57,29 @@ class fwForum
                     ->map($map)
                     ->reduce($reduce, array())
                     ->get();
+    }
+
+    private static function isUserModerator(fwPDO $dbController, $boardId, $fwUserId)
+    {
+        $query = "SELECT * FROM fwGraphNodes " .
+                 "WHERE nodeType = 'boardModerator' " .
+                 "AND nodeKey = ?";
+
+        $response = $dbController->query($query, [$boardId]);
+        $response = array_filter($response, fn ($x) => $x['nodeMeta'] == $fwUserId);
+
+        return ( count($response) > 0 );
+    }
+
+    private static function isUserPostAuthor(fwPDO $dbController, $postId, $fwUserId)
+    {
+        $query = "SELECT nodeMeta FROM fwGraphNodes " .
+                 "WHERE nodeType = 'postAuthor' " .
+                 "AND nodeKey = ?";
+
+        $response = $dbController->query($query, [$postId]);
+
+        return ( $response[0]['nodeMeta'] === $fwUserId );
     }
     
     public static function newThread(fwPDO $dbController, array $request)
@@ -159,17 +182,61 @@ class fwForum
         try
         {
             fwUtils::verifyRequiredParameters(
-                ['fwUserId', 'authToken', 'threadId', 'hash'],
+                ['fwUserId', 'authToken', 'threadId', 'boardId', 'hash'],
                 $request
             );
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            fwUtils::verifyAuthToken($request['authToken']);            
+            fwUtils::verifyAuthToken($request['authToken']);
+
+            if ( self::doesPostIdExist($dbController, $request['hash']) == FALSE )
+            {
+                // post not found
+                throw new fwServerException('000200000002');
+            }
+
+            $isUserPostAuthor = self::isUserPostAuthor(
+                $dbController, $request['threadId'], $request['fwUserId']);
+
+            $isUserModerator = self::isUserModerator(
+                $dbController, $request['boardId'], $request['fwUserId']);
+
+            if ( ($isUserModerator || $isUserPostAuthor) == FALSE )
+            {
+                // User is not author/moderator
+                throw new fwServerException('000200000004');
+            }
+
+            $deleteNodesQuery = "DELETE FROM fwGraphNodes WHERE nodeKey IN " .
+                                "( " .
+                                "    SELECT edgeTo FROM fwGraphEdges " .
+                                "    WHERE edgeType = 'post' AND edgeFrom = ? " .
+                                ")";
+
+            $dbController->execute($deleteNodesQuery, [$request['threadId']]);
+
+            $deleteEdgesQuery = "DELETE FROM fwGraphEdges WHERE edgeType IN" .
+                                "( " .
+                                "    SELECT edgeType FROM fwGraphEdges WHERE edgeFrom = ? " .
+                                ") " .
+                                "AND edgeFrom IN " .
+                                "( " .
+                                "    SELECT edgeTo FROM fwGraphEdges " .
+                                "    WHERE edgeType = 'post' AND edgeFrom = ? " .
+                                ")";
+
+            $dbController->execute($deleteEdgesQuery,
+                                   [$request['threadId'], $request['threadId']]);
+
+            return fwUtils::outputJsonResponse([]);
+            
         }
 
         catch (Exception $error)
-        {}
+        {
+            throw $error;
+        }
     }
 
     public static function newPost(fwPDO $dbController, array $request)
@@ -295,7 +362,26 @@ class fwForum
     {}
 
     public static function addBoard(fwPDO $dbController, array $request)
-    {}
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(
+                ['fwUserId', 'authToken', 'boardName', 'hash'],
+                $request
+            );
+
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            fwUtils::verifyAuthToken($request['authToken']);
+
+            
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
 
     public static function addBoardModerator(fwPDO $dbController, array $request)
     {}
