@@ -11,19 +11,44 @@ require_once(__DIR__ . '/configs.php');
 
     if ( isset($data['error']) )
     {
-        $isError = 'Please make sure that your username and password is correct.';
+        $isError = $data['error'];
         $divType = 'class="loginError"';
     }
     
     ob_start();
 ?>
-<form action="login.php" <?php echo $divType; ?>>
+<form action="login.php" <?php echo $divType; ?> method="POST">
     <span><?php echo $isError; ?></span>
     <input type="text" name="username" placeholder="username">
     <input type="password" name="passwordHash" placeholder="password">
     <input type="submit" value="LOGIN">
 </form>
 <?php return ob_get_clean();
+}
+?>
+
+<?php function alreadyLoggedIn($fwUserId)
+{
+    $dbConnnection = new fwPDO(
+        fwConfigs::get('DBUser'),
+        fwConfigs::get('DBPassword'),
+        'fwAuthorization'
+    );
+    
+    $username = $dbConnnection->query(
+        "SELECT username FROM fwUsers WHERE fwUserId = ?",
+        [$fwUserId]
+    );
+
+    $username = $username[0]['username'];
+    
+    ob_start();
+?>
+<div>
+     <p>Welcome, <?php echo $username; ?>! [<a href="logout.php">LOGOUT</a>]</p>
+</div>
+<?php
+    return ob_get_clean();
 }
 ?>
     
@@ -37,7 +62,7 @@ function getUserId($username, $passwordHash)
         'fwAuthorization'
     );
 
-    $query = "SELECT fwUserId FROM fwUsers WHERE username = ? AND password = ?";
+    $query = "SELECT fwUserId FROM fwUsers WHERE username = ? AND passwordHash = ?";
 
     $response = $dbConnnection->query($query, [$username, $passwordHash]);
 
@@ -60,15 +85,18 @@ function callEndpoint($fwUserId, $password)
     
 function loginPOST()
 {
-    $userId = getUserId($_REQUEST['username'], md5($_REQUEST['password']));
+    $userId = getUserId($_REQUEST['username'], md5($_REQUEST['passwordHash']));
 
     if ( $userId == FALSE )
         return loginGET(['error' => 1]);
 
-    $response = callEndpoint($userId);
+    $response = callEndpoint($userId, $_REQUEST['passwordHash']);
+    $response = json_decode($response, TRUE);
 
+    fwUtils::debugLog($response);
+    
     if ( isset($response['errorCode']) )
-        return loginGET(['error' => 1]);
+        return loginGET(['error' => $response['errorMessage']]);
 
     else
     {
@@ -80,6 +108,12 @@ function loginPOST()
 function loginView($data)
 {
     session_start();
+
+    if ( isset($_SESSION['authToken']) && fwUtils::verifyAuthToken($_SESSION['authToken']) )
+    {
+        $fwUserId = (explode('|', $_SESSION['authToken']))[0];
+        return alreadyLoggedIn($fwUserId);
+    }
 
     switch ( $_SERVER['REQUEST_METHOD'] )
     {

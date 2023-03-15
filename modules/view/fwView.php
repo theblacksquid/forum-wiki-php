@@ -29,7 +29,5 @@ class fwView
     public static $VIEW_DIRECTORY = __DIR__;
 }
 
-echo fwView::$VIEW_DIRECTORY;
-
 ?>
 
