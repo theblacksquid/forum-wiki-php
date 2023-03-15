@@ -13,6 +13,7 @@ final class fwServerException extends Exception
         '000100000002' => 'Password incorrect',
         '000100000003' => 'Too many failed login attempts.',
         '000100000004' => 'User is suspended',
+        '000100000005' => 'invalid authToken',
 
         // fwForum
         '000200000000' => 'Post text is too long',

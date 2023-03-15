@@ -114,7 +114,12 @@ class fwForum
             );
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
-            fwUtils::verifyAuthToken($request['authToken']);
+            
+            if ( fwUtils::verifyAuthToken($request['authToken']) == FALSE )
+            {
+                // invalid authtoken
+                throw new fwServerException('000200000005');                
+            }
 
             if ( strlen($request['threadTitle']) > fwConfigs::get('MaxTitleLength') )
             {
@@ -209,7 +214,11 @@ class fwForum
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            fwUtils::verifyAuthToken($request['authToken']);
+            if ( fwUtils::verifyAuthToken($request['authToken']) == FALSE )
+            {
+                // invalid authtoken
+                throw new fwServerException('000200000005');                
+            }
 
             if ( self::doesPostIdExist($dbController, $request['hash']) == FALSE )
             {
@@ -260,7 +269,11 @@ class fwForum
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            fwUtils::verifyAuthToken($request['authToken']);
+            if ( fwUtils::verifyAuthToken($request['authToken']) == FALSE )
+            {
+                // invalid authtoken
+                throw new fwServerException('000200000005');                
+            }
 
             if ( strlen($request['postText']) > fwConfigs::get('MaxPostLength') )
             {
@@ -340,7 +353,11 @@ class fwForum
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            fwUtils::verifyAuthToken($request['authToken']);
+            if ( fwUtils::verifyAuthToken($request['authToken']) == FALSE )
+            {
+                // invalid authtoken
+                throw new fwServerException('000200000005');                
+            }
             
             if ( strlen($request['postText']) > fwConfigs::get('MaxPostLength') )
             {
@@ -379,7 +396,11 @@ class fwForum
 
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            fwUtils::verifyAuthToken($request['authToken']);
+            if ( fwUtils::verifyAuthToken($request['authToken']) == FALSE )
+            {
+                // invalid authtoken
+                throw new fwServerException('000200000005');                
+            }
 
             if ( self::doesPostIdExist($dbController, $request['hash']) == FALSE )
             {
@@ -518,7 +539,7 @@ class fwForum
                      "( " .
                      "    SELECT edgeTo FROM fwGraphEdges " .
                      "    WHERE edgeType = 'boardModerator' " .
-                     "    AND edgeFrom = ?" .
+                     "    AND edgeFrom = ? " .
                      ") ";
 
             $response = $dbController->query($query, [$request['boardId']]);
