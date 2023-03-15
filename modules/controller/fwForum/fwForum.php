@@ -414,15 +414,31 @@ class fwForum
         try
         {
             fwUtils::verifyRequiredParameters(
-                ['fwUserId', 'authToken', 'boardName', 'hash'],
+                ['password', 'boardName'],
                 $request
             );
 
-            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+            if ( $request['password'] != fwConfigs::get('AuthSecret'))
+            {
+                // Admin Panel Error: Incorrect secret hash
+                throw new fwServerException('000200000006');
+            }
 
-            fwUtils::verifyAuthToken($request['authToken']);
+            if ( strlen($request['boardName']) > fwConfigs::get('MaxTitleLength') )
+            {
+                // Board name too long
+                throw new fwServerException('000200000005');
+            }
 
+            $boardKey = fwUtils::generateHash($request['boardName'], fwConfigs::get('AuthSecret'));
+            
+            $insertBoard = "INSERT INTO fwGraphNodes " .
+                           "(nodeType, nodeKey, nodeMeta) " .
+                           "VALUES ('board', ?, ?)";
 
+            $dbController->execute($insertBoard, [$boardKey, $request['boardName']]);
+
+            return fwUtils::outputJsonResponse(['boardId' => $boardKey]);
         }
 
         catch (Exception $error)
@@ -430,7 +446,7 @@ class fwForum
             throw $error;
         }
     }
-
+    
     public static function addBoardModerator(fwPDO $dbController, array $request)
     {}
 }

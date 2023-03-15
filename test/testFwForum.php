@@ -113,8 +113,11 @@ class tests extends fwTestingFramework
                 'thereIsNoBoardCodeYet'
             );
 
-            $afterDelete = $this->testGetThread($toDelete['result']['threadId']);
-            $this->assertEquals($afterDelete['errorCode'], '000200000002');
+            $afterDelete2 = $this->testGetThread($toDelete['result']['threadId']);
+            $this->assertEquals($afterDelete2['errorCode'], '000200000002');
+
+            $newBoard = $this->testAddBoard("Some Example Topic");
+            array_push(self::$postHashes, $newBoard['result']['boardId']);
 
             $this->testCleanup(self::$userId, self::$postHashes);
         }
@@ -128,6 +131,7 @@ class tests extends fwTestingFramework
         
         catch (Exception $error)
         {
+            echo fwServerException::handleUnknownErrors($error);
             $this->testCleanup(self::$userId, self::$postHashes);
         }
     }
@@ -295,7 +299,26 @@ class tests extends fwTestingFramework
         );
 
         return json_decode($response, TRUE);
-    }    
+    }
+
+    public function testAddBoard($boardName)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params =
+        [
+            'password' => fwConfigs::get('AuthSecret'),
+            'boardName' => $boardName
+        ];
+
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'addBoard.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
 
     public function testCleanup(array $userIds, array $threadId)
     {

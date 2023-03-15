@@ -44,7 +44,6 @@ VALUES
 ('rdfClass', 'threadTitle', ''),
 ('rdfClass', 'threadAuthor', ''),
 ('rdfClass', 'threadVisibility', ''),
-('rdfClass', 'boardName', ''),
 ('rdfClass', 'boardModerator', ''),
 ('rdfClass', 'definitionList', ''),
 ('rdfClass', 'definedTerm', ''),
@@ -76,7 +75,6 @@ SELECT 'hasField', 'board', fwGraphNodes.nodeKey, ''
 FROM fwGraphNodes
 WHERE fwGraphNodes.nodeKey IN
 (
-	'boardName',
 	'boardmoderator'
 );
 

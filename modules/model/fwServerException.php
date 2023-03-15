@@ -20,6 +20,8 @@ final class fwServerException extends Exception
         '000200000002' => 'threadId not found',
         '000200000003' => 'postId not found',
         '000200000004' => 'User is not author of post/thread or moderator',
+        '000200000005' => 'boardName is too long',
+        '000200000006' => 'Admin Panel Error: Incorrect secret hash',
     ];
 
     protected $code;
