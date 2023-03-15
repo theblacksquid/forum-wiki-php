@@ -79,7 +79,12 @@ class fwForum
     {
         $query = "SELECT * FROM fwGraphNodes " .
                  "WHERE nodeType = 'boardModerator' " .
-                 "AND nodeKey = ?";
+                 "AND nodeKey IN " .
+                 "( " .
+                 "    SELECT edgeTo FROM fwGraphEdges " .
+                 "    WHERE edgeType = 'boardModerator' " .
+                 "    AND edgeFrom = ?" .
+                 ") ";
 
         $response = $dbController->query($query, [$boardId]);
         $response = array_filter($response, fn ($x) => $x['nodeMeta'] == $fwUserId);
@@ -418,7 +423,7 @@ class fwForum
                 $request
             );
 
-            if ( $request['password'] != fwConfigs::get('AuthSecret'))
+            if ( $request['password'] != fwConfigs::get('AuthSecret') )
             {
                 // Admin Panel Error: Incorrect secret hash
                 throw new fwServerException('000200000006');
@@ -448,7 +453,84 @@ class fwForum
     }
     
     public static function addBoardModerator(fwPDO $dbController, array $request)
-    {}
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(
+                ['password', 'boardId', 'fwUserId'],
+                $request
+            );
+
+            if ( $request['password'] != fwConfigs::get('AuthSecret') )
+            {
+                // Admin Panel Error: Incorrect secret hash
+                throw new fwServerException('000200000006');
+            }
+
+            $moderatorId = fwUtils::generateHash(
+                $request['boardId'] . $request['fwUserId'],
+                fwConfigs::get('AuthSecret')
+            );
+
+            $insertModeratorQuery = "INSERT INTO fwGraphNodes " .
+                                    "(nodeType, nodeKey, nodeMeta) " .
+                                    "VALUES ('boardModerator', ?, ?);" .
+                                    "INSERT INTO fwGraphEdges " .
+                                    "(edgeType, edgeFrom, edgeTo, edgeData) " .
+                                    "VALUES ('boardModerator', ?, ?, '')";
+
+            $dbController->execute($insertModeratorQuery,
+                                   [$moderatorId, $request['fwUserId'],
+                                    $request['boardId'], $moderatorId]);
+
+            return fwUtils::outputJsonResponse(['moderatorId' => $moderatorId]);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
+
+    public static function getModerators(fwPDO $dbController, array $request)
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(['boardId', 'hash'], $request);
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            $doesBoardExistQuery = "SELECT * FROM fwGraphNodes " .
+                              "WHERE nodeType = 'board' " .
+                              "AND nodeKey = ?";
+
+            $doesBoardExist = $dbController->query($doesBoardExistQuery,
+                                                   [$request['boardId']]);
+
+            if ( count($doesBoardExist) == 0 )
+            {
+                // boardId does not exist
+                throw new fwServerException('000200000007');
+            }
+
+            $query = "SELECT * FROM fwGraphNodes " .
+                     "WHERE nodeType = 'boardModerator' " .
+                     "AND nodeKey IN " .
+                     "( " .
+                     "    SELECT edgeTo FROM fwGraphEdges " .
+                     "    WHERE edgeType = 'boardModerator' " .
+                     "    AND edgeFrom = ?" .
+                     ") ";
+
+            $response = $dbController->query($query, [$request['boardId']]);
+
+            return fwUtils::outputJsonResponse($response);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
 }
 
 ?>

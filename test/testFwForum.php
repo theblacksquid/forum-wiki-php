@@ -119,6 +119,15 @@ class tests extends fwTestingFramework
             $newBoard = $this->testAddBoard("Some Example Topic");
             array_push(self::$postHashes, $newBoard['result']['boardId']);
 
+            $addModerator = $this->testAddModerator(
+                $newBoard['result']['boardId'],
+                $user2['result']['fwUserId']
+            );
+
+            array_push(self::$postHashes, $addModerator['result']['moderatorId']);
+
+            $moderators = $this->testGetModerators($newBoard['result']['boardId']);
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
@@ -315,6 +324,40 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'addBoard.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testAddModerator($boardId, $fwUserId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params =
+        [
+            'password' => fwConfigs::get('AuthSecret'),
+            'boardId' => $boardId,
+            'fwUserId' => $fwUserId
+        ];
+
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'addBoardModerator.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testGetModerators($boardId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+        
+        $params['boardId'] = $boardId;
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'getModerators.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);
