@@ -42,7 +42,7 @@ class fwForum
                                [$postId, $postId]);
     }
 
-    private static function groupNodesByPost($postKeys, $postDataArray)
+    private static function groupNodesByNodeKeys($postKeys, $postDataArray)
     {
         $dataProcessPipe = new Collection($postDataArray);
         $postKeysMap = new Collection($postKeys);
@@ -99,6 +99,18 @@ class fwForum
         $response = $dbController->query($query, [$postId]);
 
         return ( $response[0]['nodeMeta'] === $fwUserId );
+    }
+
+    private static function doesBoardExist(fwPDO $dbController, $boardId)
+    {
+        $doesBoardExistQuery = "SELECT * FROM fwGraphNodes " .
+                             "WHERE nodeType = 'board' " .
+                             "AND nodeKey = ?";
+
+        $doesBoardExist = $dbController->query($doesBoardExistQuery,
+                                               [$boardId]);
+
+        return ( count($doesBoardExist) > 0 );
     }
     
     public static function newThread(fwPDO $dbController, array $request)
@@ -158,9 +170,14 @@ class fwForum
 
             $insertInitialPost = "INSERT INTO fwGraphEdges " .
                                  "(edgeType, edgeFrom, edgeTo, edgeData) " .
-                                 "VALUES ('post', ?, ?, 0)";
+                                 "VALUES " .
+                                 "('post', ?, ?, 0), " .
+                                 "('thread', ?, ?, '')";
 
-            $dbController->execute($insertInitialPost, [$request['hash'], $request['hash']]);
+            $dbController->execute(
+                $insertInitialPost,
+                [$request['hash'], $request['hash'],
+                 $request['board'], $request['hash']]);
 
             echo fwUtils::outputJsonResponse(['threadId' => $request['hash']]);
         }
@@ -193,7 +210,7 @@ class fwForum
         $postDataQuery = "SELECT * from fwGraphNodes WHERE nodeKey IN ( $listParamString )";
         $postData = $dbController->query($postDataQuery, $postKeys);
 
-        $groupedByPost = self::groupNodesByPost($postKeys, $postData);
+        $groupedByPost = self::groupNodesByNodeKeys($postKeys, $postData);
         $groupedByPost = array_map(
             fn ($post) => self::getDetailsFromNodes(
                 $post, 'post',
@@ -535,7 +552,7 @@ class fwForum
 
             $response = $dbController->query($getBoardAndDescription);
 
-            $groupedByBoard = self::groupNodesByPost(
+            $groupedByBoard = self::groupNodesByNodeKeys(
                 array_unique(array_column($response, 'nodeKey')),
                 $response
             );
@@ -558,6 +575,62 @@ class fwForum
         }
     }
 
+    public static function viewBoard(fwPDO $dbController, array $request)
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(['board', 'hash'], $request);
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            if ( self::doesBoardExist($dbController, $request['board']) == FALSE )
+            {
+                // boardId does not exist
+                throw new fwServerException('000200000007',
+                                            'boardId: ' . $request['board']);
+            }
+
+            $threadNodesQuery = "SELECT * FROM fwGraphNodes WHERE nodeKey IN " .
+                                "( " .
+                                "    SELECT edgeTo FROM fwGraphEdges " .
+                                "    WHERE edgeType  = 'thread' " .
+                                "    AND edgeFrom = ? " .
+                                ") ";
+
+            $threadNodes = $dbController->query($threadNodesQuery, [$request['board']]);
+            $threadNodes = self::groupNodesByNodeKeys(
+                array_unique(array_column($threadNodes, 'nodeKey')),
+                $threadNodes
+            );
+
+            $threadDetails = (new Collection($threadNodes))
+                           ->map(
+                               fn ($thread) => self::getDetailsFromNodes(
+                                   $thread,
+                                   'thread',
+                                   ['postTitle', 'postAuthor',
+                                    'postText', 'postDate', 'thread']
+                               )              
+                           )
+                           ->map(
+                               function ($thread) {
+                                   $thread['postText'] = substr($thread['postText'], 0, 50);
+                                   $thread['postText'] .= '...';
+                                   return $thread;
+                               }
+                           )
+                           ->get();
+
+            $threadDetails = array_values($threadDetails);
+
+            return fwUtils::outputJsonResponse($threadDetails);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
+
     public static function getModerators(fwPDO $dbController, array $request)
     {
         try
@@ -565,14 +638,7 @@ class fwForum
             fwUtils::verifyRequiredParameters(['boardId', 'hash'], $request);
             fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
 
-            $doesBoardExistQuery = "SELECT * FROM fwGraphNodes " .
-                              "WHERE nodeType = 'board' " .
-                              "AND nodeKey = ?";
-
-            $doesBoardExist = $dbController->query($doesBoardExistQuery,
-                                                   [$request['boardId']]);
-
-            if ( count($doesBoardExist) == 0 )
+            if ( self::doesBoardExist($dbController, $request['boardId']) == FALSE )
             {
                 // boardId does not exist
                 throw new fwServerException('000200000007');

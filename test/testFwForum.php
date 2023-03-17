@@ -137,13 +137,45 @@ class tests extends fwTestingFramework
 
             $this->testGetBoards();
 
+            $someThread1 = $this->testNewThread(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $postText1,
+                'Some random thread about random shit',
+                $newBoard1['result']['boardId']
+            );
+
+            array_push(self::$postHashes, $someThread1['result']['threadId']);
+
+            $someThread2 = $this->testNewThread(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $postText1,
+                'another random thread',
+                $newBoard1['result']['boardId']
+            );
+
+            array_push(self::$postHashes, $someThread2['result']['threadId']);
+
+            $someThread3 = $this->testNewThread(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $postText1,
+                'random thread, the third',
+                $newBoard1['result']['boardId']
+            );
+
+            array_push(self::$postHashes, $someThread3['result']['threadId']);
+
+            $this->testViewBoard($newBoard1['result']['boardId']);
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
         catch (fwServerException $error)
         {
             echo "\n";
-            echo fwServerException::outputJsonError($error->getCode());
+            echo fwServerException::outputJsonError($error->getCode(), $error->getDetails());
             $this->testCleanup(self::$userId, self::$postHashes);
         }
         
@@ -382,6 +414,20 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'getBoards.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testViewBoard($boardId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+
+        $params['board'] = $boardId;
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'viewBoard.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);

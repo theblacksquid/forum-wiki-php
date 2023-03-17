@@ -40,6 +40,11 @@ final class fwServerException extends Exception
         return $this->code;
     }
 
+    public function getDetails()
+    {
+        return $this->detail;
+    }
+
     public static function handleUnknownErrors(Exception $error)
     {
         print($error->getMessage() . "\r\n" . $error->getTraceAsString());
