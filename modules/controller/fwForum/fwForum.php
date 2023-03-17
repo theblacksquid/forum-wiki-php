@@ -602,23 +602,26 @@ class fwForum
                 $threadNodes
             );
 
+            fwUtils::debugLog($threadNodes);
+
             $threadDetails = (new Collection($threadNodes))
-                           ->map(
-                               fn ($thread) => self::getDetailsFromNodes(
-                                   $thread,
-                                   'thread',
-                                   ['postTitle', 'postAuthor',
-                                    'postText', 'postDate', 'thread']
-                               )              
-                           )
-                           ->map(
-                               function ($thread) {
-                                   $thread['postText'] = substr($thread['postText'], 0, 50);
-                                   $thread['postText'] .= '...';
-                                   return $thread;
-                               }
-                           )
-                           ->get();
+                ->map(
+                    fn ($thread) => self::getDetailsFromNodes(
+                        $thread,
+                        'thread',
+                        ['threadTitle', 'postAuthor',
+                         'postText', 'postDate', 'thread']
+                    )              
+                )
+                ->map(
+                    function ($thread)
+                    {
+                        $thread['postText'] = substr($thread['postText'], 0, 50);
+                        $thread['postText'] .= '...';
+                        return $thread;
+                    }
+                )
+                ->get();
 
             $threadDetails = array_values($threadDetails);
 

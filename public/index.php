@@ -20,6 +20,6 @@ $boardData = json_decode(getBoardList(), TRUE);
 
 $mainContent = fwView::component($boardListPath, $boardData);
 
-echo fwView::page('hello world', implode('\n', [$loginForm, $mainContent]));
+echo fwView::page('hello world', implode("\n", [$loginForm, $mainContent]));
 
 ?>

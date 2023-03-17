@@ -8,6 +8,7 @@ function boardList($boardData)
     ob_start();
 ?>
 
+<div id="board-list">
 <table>
     <thead>
     <tr><td>Board Name</td><td>Description</td></tr>
@@ -36,10 +37,11 @@ function boardList($boardData)
     ?>
     </tbody>
 </table>
-
+</div>
+          
 <?php
 
-     return ob_get_clean();
+    return ob_get_clean();
 }
 
 return 'boardList';
