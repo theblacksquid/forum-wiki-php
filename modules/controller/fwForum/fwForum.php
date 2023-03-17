@@ -54,21 +54,19 @@ class fwForum
         )->get();
     }
 
-    private static function getPostDetails($postData)
+    private static function getDetailsFromNodes($nodes, $nodeType, array $fields)
     {
-        $data = new Collection($postData);
-        
-        $filter = fn ($node) => in_array(
-                    $node['nodeType'],
-                    ["postAuthor", "postDate", "postText", "post"],
-                    TRUE);
+        $data = new Collection($nodes);
 
-        $map = fn ($node) => $node['nodeType'] == 'post' ?
-                             ['post', $node['nodeKey']] :
-                             [$node['nodeType'], $node['nodeMeta']];
-        
+        $filter = fn ($node) => in_array($node['nodeType'], $fields, TRUE);
+
+        $map = fn ($node) =>
+             $node['nodeType'] == $nodeType ?
+             [$nodeType, $node['nodeKey']] :
+             [$node['nodeType'], $node['nodeMeta']];
+
         $reduce = function ($prev, $next) { $prev[$next[0]] = $next[1]; return $prev; };
-        
+
         return $data->filter($filter)
                     ->map($map)
                     ->reduce($reduce, array())
@@ -197,7 +195,9 @@ class fwForum
 
         $groupedByPost = self::groupNodesByPost($postKeys, $postData);
         $groupedByPost = array_map(
-            fn ($post) => self::getPostDetails($post),
+            fn ($post) => self::getDetailsFromNodes(
+                $post, 'post',
+                ["postAuthor", "postDate", "postText", "post"]),
             $groupedByPost);
 
         return fwUtils::outputJsonResponse($groupedByPost);
@@ -440,7 +440,7 @@ class fwForum
         try
         {
             fwUtils::verifyRequiredParameters(
-                ['password', 'boardName'],
+                ['password', 'boardName', 'boardDescription'],
                 $request
             );
 
@@ -460,9 +460,15 @@ class fwForum
             
             $insertBoard = "INSERT INTO fwGraphNodes " .
                            "(nodeType, nodeKey, nodeMeta) " .
-                           "VALUES ('board', ?, ?)";
+                           "VALUES " .
+                           "('board', ?, ?), " . 
+                           "('boardDescription', ?, ?)," .
+                           "('boardName', ?, ?)";
 
-            $dbController->execute($insertBoard, [$boardKey, $request['boardName']]);
+            $dbController->execute($insertBoard,
+                                   [$boardKey, $request['boardName'],
+                                    $boardKey, $request['boardDescription'],
+                                    $boardKey, $request['boardName']]);
 
             return fwUtils::outputJsonResponse(['boardId' => $boardKey]);
         }
@@ -498,13 +504,52 @@ class fwForum
                                     "VALUES ('boardModerator', ?, ?);" .
                                     "INSERT INTO fwGraphEdges " .
                                     "(edgeType, edgeFrom, edgeTo, edgeData) " .
-                                    "VALUES ('boardModerator', ?, ?, '')";
+                                    "VALUES ('boardModerator', ?, ?, '');";
 
             $dbController->execute($insertModeratorQuery,
                                    [$moderatorId, $request['fwUserId'],
                                     $request['boardId'], $moderatorId]);
 
             return fwUtils::outputJsonResponse(['moderatorId' => $moderatorId]);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
+
+    public static function getBoards(fwPDO $dbController, array $request)
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(['hash'], $request);
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            $getBoardAndDescription = "SELECT * FROM fwGraphNodes " .
+                                      "WHERE nodeKey IN " .
+                                      "( " .
+                                      "    SELECT nodeKey FROM fwGraphNodes " .
+                                      "    WHERE nodeType = 'board' " .
+                                      ") ";
+
+            $response = $dbController->query($getBoardAndDescription);
+
+            $groupedByBoard = self::groupNodesByPost(
+                array_unique(array_column($response, 'nodeKey')),
+                $response
+            );
+
+            $groupedByBoard = array_values($groupedByBoard);
+
+            $groupedByBoard = array_map(
+                fn ($board) => self::getDetailsFromNodes(
+                    $board, 'board',
+                    ['boardName', 'boardDescription', 'board']),
+                $groupedByBoard
+            );
+
+            return fwUtils::outputJsonResponse($groupedByBoard);
         }
 
         catch (Exception $error)

@@ -29,17 +29,20 @@ class tests extends fwTestingFramework
                 'anotherPassword'
             );
 
-            $newBoard = $this->testAddBoard("Some Example Topic");
-            array_push(self::$postHashes, $newBoard['result']['boardId']);
+            $newBoard1 = $this->testAddBoard("Some Example Topic");
+            $newBoard2 = $this->testAddBoard("Another Topic");
+            array_push(self::$postHashes, $newBoard1['result']['boardId']);
+            array_push(self::$postHashes, $newBoard2['result']['boardId']);
+            
 
             $addModerator = $this->testAddModerator(
-                $newBoard['result']['boardId'],
+                $newBoard1['result']['boardId'],
                 $user2['result']['fwUserId']
             );
 
             array_push(self::$postHashes, $addModerator['result']['moderatorId']);
 
-            $moderators = $this->testGetModerators($newBoard['result']['boardId']);
+            $moderators = $this->testGetModerators($newBoard1['result']['boardId']);
 
             $postText1 = "Etiam laoreet quam sed arcu.  Donec hendrerit tempor tellus.  Integer placerat tristique nisl.  Nam vestibulum accumsan nisl.  Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia eros.  ";
         
@@ -47,7 +50,7 @@ class tests extends fwTestingFramework
                 $user1['result']['fwUserId'],
                 $authToken1['result']['authToken'],
                 $postText1, "lorem ipsum",
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $this->assertEquals(isset($thread1['result']['threadId']), TRUE);
@@ -57,7 +60,7 @@ class tests extends fwTestingFramework
                 $authToken1['result']['authToken'],
                 implode(array_fill(0, 1000, $postText1)),
                 "lorem ipsum",
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $this->assertEquals($postFail1['errorCode'], '000200000000');
@@ -67,7 +70,7 @@ class tests extends fwTestingFramework
                 $authToken1['result']['authToken'],
                 $postText1,
                 implode(array_fill(0, 100, "lorem ipsum")),
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $this->assertEquals($postFail2['errorCode'], '000200000001');
@@ -108,7 +111,7 @@ class tests extends fwTestingFramework
                 $user1['result']['fwUserId'],
                 $authToken1['result']['authToken'],
                 $thread1['result']['threadId'],
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $afterDelete = $this->testGetThread($thread1['result']['threadId']);
@@ -119,18 +122,20 @@ class tests extends fwTestingFramework
                 $authToken2['result']['authToken'],
                 $postText1,
                 'This one is just gonna get deleted',
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $this->testDeletePost(
                 $user2['result']['fwUserId'],
                 $authToken2['result']['authToken'],
                 $toDelete['result']['threadId'],
-                $newBoard['result']['boardId']
+                $newBoard1['result']['boardId']
             );
 
             $afterDelete2 = $this->testGetThread($toDelete['result']['threadId']);
             $this->assertEquals($afterDelete2['errorCode'], '000200000002');
+
+            $this->testGetBoards();
 
             $this->testCleanup(self::$userId, self::$postHashes);
         }
@@ -321,7 +326,8 @@ class tests extends fwTestingFramework
         $params =
         [
             'password' => fwConfigs::get('AuthSecret'),
-            'boardName' => $boardName
+            'boardName' => $boardName,
+            'boardDescription' => 'This is some random placeholder text, ignore this'
         ];
 
         $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
@@ -362,6 +368,20 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'getModerators.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testGetBoards()
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+
+        $params = [];
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'getBoards.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);
