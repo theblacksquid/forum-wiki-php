@@ -7,6 +7,7 @@
     <head>
 	<title><?php echo $title; ?></title>
 	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+	<link rel="stylesheet" href="./vendor/w3.css" />
 	<script src="./vendor/htmx.min.js"></script>
     </head>
     <body><?php echo $body; ?></body>
