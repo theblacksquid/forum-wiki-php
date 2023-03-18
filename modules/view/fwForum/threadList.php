@@ -12,6 +12,7 @@ function threadList($threadData)
     <thead>
     <tr>
         <td>Title</td>
+        <td>Started by</td>
         <td>Preview</td>
         <td>Date Posted</td>
     </tr>
@@ -29,6 +30,7 @@ function threadList($threadData)
                        <?php echo $thread['threadTitle']; ?>
                    </a>
               </td>
+              <td> <?php echo $thread['postAuthorUsername'] ?> </td>
               <td> <?php echo $thread['postText']; ?> </td>
               <td>
                    <?php echo date("Y-M-d", $thread['postDate']); ?>

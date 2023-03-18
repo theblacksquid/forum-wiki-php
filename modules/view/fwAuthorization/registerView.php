@@ -9,7 +9,11 @@ require_once(__DIR__ . '/../../model/fwConfigs.php');
     ob_start();
 ?>
 
-<form method='POST' action='register.php' hx-post="register.php">
+<form method='POST' action='register.php'
+      id ="registration-form"
+      hx-boost="true"
+      hx-select="main"
+      hx-target="main">
      <input type='text' name='requestedUsername' placeholder='Username'>
      <input type='password' name='password' placeholder='Password'>
      <input type='submit' value='REGISTER'>

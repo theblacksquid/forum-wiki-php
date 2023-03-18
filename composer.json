@@ -1,0 +1,15 @@
+{
+    "name": "theblacksquid/forum-wiki-php",
+    "description": "Forum with integrated semantic wiki",
+    "type": "project",
+    "require": {
+        "erusev/parsedown": "^1.7"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aeron Paul Sioson",
+            "email": "theblacksquid@protonmail.com"
+        }
+    ]
+}

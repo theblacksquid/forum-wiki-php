@@ -95,8 +95,6 @@ function loginPOST()
 
     $response = callLoginEndpoint($userId, $_REQUEST['passwordHash']);
     $response = json_decode($response, TRUE);
-
-    fwUtils::debugLog($response);
     
     if ( isset($response['errorCode']) )
         return loginGET(['error' => $response['errorMessage']]);

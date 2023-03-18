@@ -5,6 +5,6 @@ $templatePath = __DIR__ . '/../modules/view/fwAuthorization/registerView.php';
 
 $form = fwView::component($templatePath, [], NULL);
 
-echo $form;
+echo fwView::page('hello world', $form);
 
 ?>
