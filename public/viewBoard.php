@@ -6,7 +6,7 @@ require_once(__DIR__ . "/../modules/model/fwConfigs.php");
 
 $threadListTemplate = __DIR__ . "/../modules/view/fwForum/threadList.php";
 
-function callEndpoint()
+function callBoardEndpoint()
 {
     $_REQUEST['hash'] = fwUtils::generateHash($_REQUEST, fwConfigs::get('AuthSecret'));
     ob_start();
@@ -14,7 +14,7 @@ function callEndpoint()
     return ob_get_clean();
 }
 
-$threadList = fwView::component($threadListTemplate, json_decode(callEndpoint(), TRUE));
+$threadList = fwView::component($threadListTemplate, json_decode(callBoardEndpoint(), TRUE));
 
 echo fwView::page('hello world', $threadList);
 

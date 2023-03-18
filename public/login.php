@@ -5,6 +5,6 @@ $loginPath = __DIR__ . '/../modules/view/fwAuthorization/loginView.php';
 
 $loginForm = fwView::component($loginPath, [], NULL);
 
-echo fwView::page('hello world', $loginForm);
+echo $loginForm
 
 ?>

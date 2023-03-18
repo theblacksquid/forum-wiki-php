@@ -17,11 +17,14 @@ require_once(__DIR__ . '/configs.php');
     
     ob_start();
 ?>
-<form action="login.php" <?php echo $divType; ?> method="POST">
-    <span><?php echo $isError; ?></span>
+<form action="login.php" <?php echo $divType; ?> method="POST"
+      hx-post="login.php"
+      class="">
+    <span class="w3-red"><?php echo $isError; ?></span>
     <input type="text" name="username" placeholder="username">
     <input type="password" name="passwordHash" placeholder="password">
     <input type="submit" value="LOGIN">
+    <a href="/register.php">[REGISTER]</a>
 </form>
 <?php return ob_get_clean();
 }
@@ -72,7 +75,7 @@ function getUserId($username, $passwordHash)
         return FALSE;
 }
 
-function callEndpoint($fwUserId, $password)
+function callLoginEndpoint($fwUserId, $password)
 {
     $_REQUEST['fwUserId'] = $fwUserId;
     $_REQUEST['passwordHash'] = md5($password);
@@ -88,9 +91,9 @@ function loginPOST()
     $userId = getUserId($_REQUEST['username'], md5($_REQUEST['passwordHash']));
 
     if ( $userId == FALSE )
-        return loginGET(['error' => 1]);
+        return loginGET(['error' => 'Username not found']);
 
-    $response = callEndpoint($userId, $_REQUEST['passwordHash']);
+    $response = callLoginEndpoint($userId, $_REQUEST['passwordHash']);
     $response = json_decode($response, TRUE);
 
     fwUtils::debugLog($response);
@@ -101,7 +104,7 @@ function loginPOST()
     else
     {
         $_SESSION['authToken'] = $response['result']['authToken'];
-        header('Location: /');
+        header('Location: /login.php');
     };
 }
     

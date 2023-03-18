@@ -1,5 +1,15 @@
+<?php
+
+require_once(__DIR__ . "/fwView.php");
+
+?>
+
+
 <?php function mainTemplate($title, $body)
 {
+    $loginTemplate = __DIR__ . "/fwAuthorization/loginView.php";
+    $loginBar = fwView::component($loginTemplate, []);
+    
     ob_start();
 ?>
 <!DOCTYPE html>
@@ -10,7 +20,15 @@
 	<link rel="stylesheet" href="./vendor/w3.css" />
 	<script src="./vendor/htmx.min.js"></script>
     </head>
-    <body><?php echo $body; ?></body>
+    <body>
+        <header>
+            <nav>
+                <a href="/"><?php echo fwConfigs::get('ForumName'); ?></a>
+                <?php echo $loginBar; ?>
+            </nav>
+        </header>
+    <?php echo $body; ?>
+    </body>
 </html>
 <?php 
     return ob_get_clean();

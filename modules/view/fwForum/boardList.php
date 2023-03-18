@@ -9,7 +9,7 @@ function boardList($boardData)
 ?>
 
 <div id="board-list">
-<table>
+<table border="1">
     <thead>
     <tr><td>Board Name</td><td>Description</td></tr>
     </thead>

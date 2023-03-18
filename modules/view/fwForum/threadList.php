@@ -8,7 +8,7 @@ function threadList($threadData)
     ob_start();
 ?>
 
-<table>
+<table border="1">
     <thead>
     <tr>
         <td>Title</td>
