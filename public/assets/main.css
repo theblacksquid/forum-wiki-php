@@ -3,7 +3,8 @@ body
 {
     margin-top: 1em;
     margin-left: 2em;
-    max-width: 69em;
+    margin-right: 2em;
+    max-width: 79ch;
 }
 
 header
@@ -15,4 +16,9 @@ td
 {
     padding-left: 1em;
     padding-right: 1em;
+}
+
+.return-link
+{
+    margin-left: 2ch;
 }

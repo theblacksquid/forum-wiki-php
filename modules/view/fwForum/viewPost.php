@@ -5,6 +5,21 @@ require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 function viewPost ($post)
 {
+    $returnLink = '';
+    
+    if ( isset($post['thread']) )
+    {
+        ob_start();
+?>
+        <a href="viewThread.php?thread=<?php echo $post['thread']; ?>"
+           class="return-link">
+           [BACK TO THREAD]
+        </a>
+<?php
+        $returnLink = ob_get_clean();
+    }
+    
+    $post = $post['result'];
     $date = date('Y-M-d H:i:s', $post['postDate']);
     $Parsedown = new Parsedown();
     ob_start();
@@ -17,6 +32,7 @@ function viewPost ($post)
                          <?php echo $date; ?>
                      </time>
                  </a>
+                 <?php echo $returnLink; ?>
              </span>
              <?php echo $Parsedown->text($post['postText']); ?>
         </article>

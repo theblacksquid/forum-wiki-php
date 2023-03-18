@@ -17,6 +17,7 @@ $data = (function ()
 })();
 
 $data = json_decode($data, TRUE);
+$data['thread'] = $_REQUEST['thread'];
 
 $postList = fwView::component($postListPath, $data);
 

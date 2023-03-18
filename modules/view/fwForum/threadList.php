@@ -33,7 +33,7 @@ function threadList($threadData)
               <td> <?php echo $thread['postAuthorUsername'] ?> </td>
               <td> <?php echo $thread['postText']; ?> </td>
               <td>
-                   <?php echo date("Y-M-d", $thread['postDate']); ?>
+                   <?php echo date("Y-M-d H:i:s", $thread['postDate']); ?>
               </td>
           </tr>
     <?php

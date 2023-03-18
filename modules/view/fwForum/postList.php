@@ -5,10 +5,12 @@ require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 function postList($postData)
 {
+    isset($postData['thread']) ? $thread = '&thread=' . $postData['thread'] : $thread = '';
+    
     $data = new Collection($postData['result']);
 
     return $data
-        ->map(function ($post)
+        ->map(function ($post) use ($thread)
         {
             $date = date('Y-M-d H:i:s', $post['postDate']);
             $Parsedown = new Parsedown();
@@ -16,8 +18,10 @@ function postList($postData)
 ?>
             <article id="<?php echo $post['post']; ?>">
                  <span aria-label="post metadata">
-                     <b> <?php echo $post['postAuthorUsername']; ?> </b>
-                     <a href="viewPost.php?post=<?php echo $post['post']; ?>">
+                     <b aria-label="post author">
+                         <?php echo $post['postAuthorUsername']; ?>
+                     </b>
+                     <a href="viewPost.php?post=<?php echo $post['post'] . $thread; ?>">
                          <time datetime="<?php echo $date; ?>">
                              <?php echo $date; ?>
                          </time>
