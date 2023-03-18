@@ -169,6 +169,37 @@ class tests extends fwTestingFramework
 
             $this->testViewBoard($newBoard1['result']['boardId']);
 
+            $newPost2 = $this->testNewPost(
+                $user1['result']['fwUserId'],
+                $authToken1['result']['authToken'],
+                $postText1,
+                $someThread1['result']['threadId']
+            );
+
+            array_push(self::$postHashes, $newPost2['result']['postId']);
+
+            $newPost3 = $this->testNewPost(
+                $user2['result']['fwUserId'],
+                $authToken2['result']['authToken'],
+                $postText1 . "this content has to be unique",
+                $someThread1['result']['threadId']
+            );
+
+            array_push(self::$postHashes, $newPost3['result']['postId']);
+
+            $newPost4 = $this->testNewPost(
+                $user1['result']['fwUserId'],
+                $authToken1['result']['authToken'],
+                $postText1 . "make it unique" ,
+                $someThread1['result']['threadId']
+            );
+
+            array_push(self::$postHashes, $newPost4['result']['postId']);
+
+            $this->testGetThread($someThread1['result']['threadId']);
+
+            $this->testGetPost($newPost3['result']['postId']);
+
             $this->testCleanup(self::$userId, self::$postHashes);
         }
 
@@ -428,6 +459,20 @@ class tests extends fwTestingFramework
 
         $response = self::testControllerUrl(
             'fwForum', 'viewBoard.php', $params, FALSE
+        );
+
+        return json_decode($response, TRUE);
+    }
+
+    public function testGetPost($postId)
+    {
+        echo "\r\n" . __FUNCTION__ . "\r\n";
+
+        $params['post'] = $postId;
+        $params['hash'] = fwUtils::generateHash($params, fwConfigs::get('AuthSecret'));
+
+        $response = self::testControllerUrl(
+            'fwForum', 'getPost.php', $params, FALSE
         );
 
         return json_decode($response, TRUE);

@@ -458,6 +458,37 @@ class fwForum
         }
     }
 
+    public static function getPost(fwPDO $dbController, array $request)
+    {
+        try
+        {
+            fwUtils::verifyRequiredParameters(['post', 'hash'], $request);
+            fwUtils::verifyHash($request['hash'], $request, fwConfigs::get('AuthSecret'));
+
+            $query = "SELECT * FROM fwGraphNodes WHERE nodeKey = ?";
+            $rawNodes = $dbController->query($query, [$request['post']]);
+
+            if ( count($rawNodes) == 0 )
+            {
+                // postId not found
+                throw new fwServerException('000200000003');
+            }
+            
+            $details = self::getDetailsFromNodes(
+                $rawNodes,
+                'post',
+                ['post', 'postAuthor', 'postAuthorUsername', 'postText', 'postDate']
+            );
+
+            return fwUtils::outputJsonResponse($details);
+        }
+
+        catch (Exception $error)
+        {
+            throw $error;
+        }
+    }
+
     public static function addBoard(fwPDO $dbController, array $request)
     {
         try
