@@ -153,7 +153,10 @@ class fwForum
                         "('postAuthor', :hash, :postAuthor)," .
                         "('threadTitle', :hash, :threadTitle)," .
                         "('threadAuthor', :hash, :postAuthor)," .
-                        "('threadVisibility', :hash, :threadVisibility)";
+                        "('threadVisibility', :hash, :threadVisibility); " .
+                        "INSERT INTO fwGraphNodes (nodeType, nodeKey, nodeMeta) " .
+                        "SELECT 'postAuthorUsername', :hash, username " .
+                        "FROM fwAuthorization.fwUsers WHERE fwUserId = :postAuthor ";
 
             $nodeInsertParams =
             [
@@ -214,7 +217,7 @@ class fwForum
         $groupedByPost = array_map(
             fn ($post) => self::getDetailsFromNodes(
                 $post, 'post',
-                ["postAuthor", "postDate", "postText", "post"]),
+                ["postAuthor", "postDate", "postText", "post", "postAuthorUsername"]),
             $groupedByPost);
 
         return fwUtils::outputJsonResponse($groupedByPost);
@@ -309,7 +312,10 @@ class fwForum
                           "('post', :hash, ''), " .
                           "('postAuthor', :hash, :postAuthor), " .
                           "('postDate', :hash, UNIX_TIMESTAMP(NOW())), " .
-                          "('postText', :hash, :postText) ";
+                          "('postText', :hash, :postText); " .
+                          "INSERT INTO fwGraphNodes (nodeType, nodeKey, nodeMeta) " .
+                          "SELECT 'postAuthorUsername', :hash, username " .
+                          "FROM fwAuthorization.fwUsers WHERE fwUserId = :postAuthor ; ";
 
             $nodeInsertParams =
                 [
@@ -602,14 +608,12 @@ class fwForum
                 $threadNodes
             );
 
-            fwUtils::debugLog($threadNodes);
-
             $threadDetails = (new Collection($threadNodes))
                 ->map(
                     fn ($thread) => self::getDetailsFromNodes(
                         $thread,
                         'thread',
-                        ['threadTitle', 'postAuthor',
+                        ['threadTitle', 'postAuthor', 'postAuthorUsername',
                          'postText', 'postDate', 'thread']
                     )              
                 )
